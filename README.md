@@ -1,4 +1,4 @@
-# CodeTorch
+# Wafflez Studios (CodeTorch) GitHub community forum
 
 Welcome to the Wafflez_Wif_Syrup community forum! Official community issue tracking and bug reporting campus for [Wafflez Studios](https://codetorch.net/users/Wafflez_Wif_Syrup) projects.
 
