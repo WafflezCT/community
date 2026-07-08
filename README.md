@@ -1,2 +1,3 @@
-# codetorch
-CodeTorch community forum!
+# CodeTorch
+
+Welcome to the Wafflez_Wif_Syrup community forum
