@@ -12,3 +12,6 @@ contact_links:
   - name: "\U0001F6E3 Roadmaps"
     url: https://github.com/ilim-cell/codetorch/projects
     about: Roadmaps for the future of Wafflez
+  - name: "Fullscreen"
+    url: https://github.com/ilim-cell/codetorch/issues/new/choose
+    about: Open a more immersive issue composer
