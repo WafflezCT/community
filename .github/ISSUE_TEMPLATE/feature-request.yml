@@ -1,0 +1,45 @@
+name: '⭐ Feature or enhancement request'
+description: Propose something new. (Not new projects)
+labels:
+    - Needs Triage
+    - Feature Request
+body:
+    - type: dropdown
+      attributes:
+          label: Products issue?
+          description: What projects are you proposing features for? Check all that apply.
+          multiple: true
+          options:
+              - ScratchGPT (including SDK)
+              - PolyOS (including SDK)
+              - UI Elements
+              - AI Detector
+              - ScratchGPT SDK
+              - CodeTorch Online Status
+              - Life in Three Moves
+              - Star and Snow Animation
+              - General profile issues
+              - Something else not on this list
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Description of the new feature / enhancement
+          placeholder: What is the expected behavior of the proposed feature?
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Scenario when this would be used?
+          placeholder: What is the scenario this would be used in? Why is this important to your workflow?
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Supporting information
+          placeholder: Having additional evidence, data, tweets, blog posts, research, ... anything is extremely helpful. This information provides context to the scenario that may otherwise be lost.
+      validations:
+          required: false
+    - type: markdown
+      attributes:
+          value: Please limit one request per issue. To create more requests, check the "Create more" option when submitting this.
