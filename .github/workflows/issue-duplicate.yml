@@ -1,0 +1,40 @@
+name: Auto-close Duplicate Issues
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  handle-duplicate:
+    # 1. Filters for the exact command syntax
+    # 2. Hard-restricts usage strictly to repository maintainers
+    if: |
+      startsWith(github.event.comment.body, '/dup #') && 
+      (github.event.comment.author_association == 'OWNER' || 
+       github.event.comment.author_association == 'MEMBER' || 
+       github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Extract Target Issue Number
+        id: extract
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          TARGET_ISSUE=$(echo "$COMMENT_BODY" | grep -oE '/dup #[0-9]+' | head -n 1 | awk -F'#' '{print $2}')
+          echo "target=$TARGET_ISSUE" >> $GITHUB_OUTPUT
+
+      - name: Close and Notify as Duplicate
+        if: steps.extract.outputs.target != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CURRENT_ISSUE: ${{ github.event.issue.number }}
+          TARGET_ISSUE: ${{ steps.extract.outputs.target }}
+        run: |
+          # Executes native duplicate closing with your custom message embedded seamlessly
+          gh issue close "$CURRENT_ISSUE" \
+            --repo "$REPO" \
+            --duplicate-of "$TARGET_ISSUE" \
+            --comment "Hi! We've identified this issue as a duplicate of another one that already exists on this Issue Tracker. This specific instance is being closed in favor of tracking the concern over on the referenced thread. Thanks for your report!"
