@@ -1,0 +1,73 @@
+name: Maintainer Issue Commands
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  handle-commands:
+    if: |
+      (github.event.comment.author_association == 'OWNER' || 
+       github.event.comment.author_association == 'MEMBER' || 
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (startsWith(github.event.comment.body, '/close ') || 
+       startsWith(github.event.comment.body, '/dup #') || 
+       startsWith(github.event.comment.body, '/reopen'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Process Slash Command
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CURRENT_ISSUE: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          # Clean up the input string to read the first line/command safely
+          CMD=$(echo "$COMMENT_BODY" | head -n 1 | xargs)
+
+          echo "Command recognized: $CMD"
+          echo "Adding 👀 reaction to indicate processing..."
+          
+          # 1. Add the eyes reaction to the maintainer's comment
+          REACTION_DATA=$(gh api \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$REPO/issues/comments/$COMMENT_ID/reactions" \
+            -f content="eyes")
+          
+          # Extract the reaction ID so we can delete this specific one later
+          REACTION_ID=$(echo "$REACTION_DATA" | jq '.id')
+
+          # 2. Execute the corresponding triage action based on command text
+          if [[ "$CMD" == "/close completed" ]]; then
+            echo "Closing issue as completed..."
+            gh issue close "$CURRENT_ISSUE" --repo "$REPO" --reason "completed"
+
+          elif [[ "$CMD" == "/close not planned" ]]; then
+            echo "Closing issue as not planned..."
+            gh issue close "$CURRENT_ISSUE" --repo "$REPO" --reason "not planned"
+
+          elif [[ "$CMD" == "/reopen" ]]; then
+            echo "Reopening issue..."
+            gh issue reopen "$CURRENT_ISSUE" --repo "$REPO"
+
+          elif [[ "$CMD" =~ ^/dup\ #[0-9]+ ]]; then
+            TARGET_ISSUE=$(echo "$CMD" | grep -oE '#[0-9]+' | sed 's/#//')
+            echo "Closing issue as a duplicate of #$TARGET_ISSUE..."
+            
+            gh issue close "$CURRENT_ISSUE" \
+              --repo "$REPO" \
+              --duplicate-of "$TARGET_ISSUE" \
+              --comment "Hi! We've identified this issue as a duplicate of #$TARGET_ISSUE that already exists on this Issue Tracker. This specific instance is being closed in favor of tracking the concern over on the referenced thread. Thanks for your report!"
+          fi
+
+          # 3. Clean up the placeholder reaction now that the job is complete
+          echo "Removing 👀 reaction..."
+          gh api \
+            -X DELETE \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$REPO/issues/comments/$COMMENT_ID/reactions/$REACTION_ID"
