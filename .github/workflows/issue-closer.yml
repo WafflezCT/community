@@ -1,0 +1,47 @@
+name: Maintainer Issue Commands
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  handle-commands:
+    # Restrict execution strictly to repository maintainers
+    if: |
+      (github.event.comment.author_association == 'OWNER' || 
+       github.event.comment.author_association == 'MEMBER' || 
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (startsWith(github.event.comment.body, '/close ') || startsWith(github.event.comment.body, '/dup #'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Process Slash Command
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CURRENT_ISSUE: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          # Clean up the input string to read the first line/command safely
+          CMD=$(echo "$COMMENT_BODY" | head -n 1 | xargs)
+
+          if [[ "$CMD" == "/close completed" ]]; then
+            echo "Closing issue as completed..."
+            gh issue close "$CURRENT_ISSUE" --repo "$REPO" --reason "completed"
+
+          elif [[ "$CMD" == "/close not planned" ]]; then
+            echo "Closing issue as not planned..."
+            gh issue close "$CURRENT_ISSUE" --repo "$REPO" --reason "not planned"
+
+          elif [[ "$CMD" =~ ^/dup\ #[0-9]+ ]]; then
+            # Extract the issue number from /dup #123
+            TARGET_ISSUE=$(echo "$CMD" | grep -oE '#[0-9]+' | sed 's/#//')
+            echo "Closing issue as a duplicate of #$TARGET_ISSUE..."
+            
+            gh issue close "$CURRENT_ISSUE" \
+              --repo "$REPO" \
+              --duplicate-of "$TARGET_ISSUE" \
+              --comment "Hi! We've identified this issue as a duplicate of another one that already exists on this Issue Tracker. This specific instance is being closed in favor of tracking the concern over on the referenced thread. Thanks for your report!"
+          fi
